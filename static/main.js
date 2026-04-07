@@ -318,5 +318,5 @@ function updateCharts(lineChartDiv, xArray, yArray, sensorRead) {
   setTimeout(() => {
     updateSensorReadings();
     loop();
-  }, 500);
+  }, 100);
 })();
