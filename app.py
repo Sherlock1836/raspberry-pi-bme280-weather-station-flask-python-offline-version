@@ -16,7 +16,7 @@ picam2 = Picamera2()
 
 # 2. Configure and Start the Camera Globally
 # We keep the resolution modest so the Pi Zero 2 W CPU doesn't bottleneck
-config = picam2.create_video_configuration(main={"size": (640, 480)})
+config = picam2.create_video_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
 picam2.start()
 
