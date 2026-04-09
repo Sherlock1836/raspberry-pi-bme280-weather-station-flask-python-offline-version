@@ -318,7 +318,7 @@ function updateCharts(lineChartDiv, xArray, yArray, sensorRead) {
   setTimeout(() => {
     updateSensorReadings();
     loop();
-  }, 100);
+  }, 250);
 })();
 
 // Camera feed functionality
