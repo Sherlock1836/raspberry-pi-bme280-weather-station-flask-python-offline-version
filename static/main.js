@@ -320,3 +320,21 @@ function updateCharts(lineChartDiv, xArray, yArray, sensorRead) {
     loop();
   }, 100);
 })();
+
+// Camera feed functionality
+var btnStartStream = document.getElementById("btn-start-stream");
+var imgLiveStream = document.getElementById("img-live-stream");
+
+btnStartStream.addEventListener("click", function() {
+  imgLiveStream.src = "/stream";
+  imgLiveStream.style.display = "inline-block";
+});
+
+var btnGetPhoto = document.getElementById("btn-get-photo");
+var imgStillPhoto = document.getElementById("img-still-photo");
+
+btnGetPhoto.addEventListener("click", function() {
+  // Append a timestamp to the URL to bypass browser caching
+  imgStillPhoto.src = `/photo?t=${new Date().getTime()}`;
+  imgStillPhoto.style.display = "inline-block";
+});

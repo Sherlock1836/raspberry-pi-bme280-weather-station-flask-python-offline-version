@@ -89,6 +89,23 @@
             </div>
           </div>
         </div>
+        
+        <div class="graph-box" style="margin-top: 20px;">
+          <div style="flex: 1; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 10px rgba(0,0,0,0.1); margin-right: 20px;">
+            <div class="title" style="font-size: 24px; font-weight: 500; margin-bottom: 15px;">Live Camera Feed</div>
+            <button id="btn-start-stream" style="margin-bottom: 15px; padding: 8px 16px; cursor: pointer; background: #0A2558; color: #fff; border: none; border-radius: 4px; font-size: 15px;">Start Stream</button>
+            <div style="text-align: center;">
+              <img id="img-live-stream" alt="Live Camera Feed" width="640" height="480" style="display: none; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" />
+            </div>
+          </div>
+          <div style="flex: 1; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 10px rgba(0,0,0,0.1);">
+            <div class="title" style="font-size: 24px; font-weight: 500; margin-bottom: 15px;">Still Snapshot</div>
+            <button id="btn-get-photo" style="margin-bottom: 15px; padding: 8px 16px; cursor: pointer; background: #0A2558; color: #fff; border: none; border-radius: 4px; font-size: 15px;">Get Still Shot</button>
+            <div style="text-align: center;">
+              <img id="img-still-photo" alt="Still Snapshot" width="640" height="480" style="display: none; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
     <script src="static/main.js"></script>
