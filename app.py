@@ -81,5 +81,6 @@ def video_stream():
     """Returns the live video feed."""
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+# use reloader must be disabled so camera initialization doesn't get spammed
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', threaded=True)
+    app.run(debug=True, host='0.0.0.0', threaded=True, use_reloader=False)
