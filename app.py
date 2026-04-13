@@ -12,13 +12,17 @@ except Exception as e:
     print(f"Error initializing BME280 module: {e}")
     bme280_module = None
     
-picam2 = Picamera2()
+try:
+    picam2 = Picamera2()
 
-# 2. Configure and Start the Camera Globally
-# We keep the resolution modest so the Pi Zero 2 W CPU doesn't bottleneck
-config = picam2.create_video_configuration(main={"size": (1280, 720)})
-picam2.configure(config)
-picam2.start()
+    # 2. Configure and Start the Camera Globally
+    # We keep the resolution modest so the Pi Zero 2 W CPU doesn't bottleneck
+    config = picam2.create_video_configuration(main={"size": (1280, 720)})
+    picam2.configure(config)
+    picam2.start()
+except Exception as e:
+    print(f"Error initializing Picamera2 module: {e}")
+    picam2 = None
 
 @app.route("/")
 def hello_world():
@@ -46,6 +50,9 @@ def get_sensor_readings():
 @app.route("/photo")
 def get_photo():
     """Takes a single still shot and returns it directly to the browser."""
+    if picam2 is None:
+        return "Camera is not initialized", 500
+
     # We grab a frame directly from the running video configuration
     frame = picam2.capture_array()
     
@@ -61,6 +68,9 @@ def get_photo():
 
 def generate_frames():
     """Generator function that yields JPEG frames for the live stream."""
+    if picam2 is None:
+        return
+
     while True:
         # Grab the current frame
         frame = picam2.capture_array()
@@ -79,6 +89,9 @@ def generate_frames():
 @app.route("/stream")
 def video_stream():
     """Returns the live video feed."""
+    if picam2 is None:
+        return "Camera is not initialized", 500
+
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # use reloader must be disabled so camera initialization doesn't get spammed
