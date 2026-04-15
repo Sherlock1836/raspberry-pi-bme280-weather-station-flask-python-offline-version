@@ -321,20 +321,121 @@ function updateCharts(lineChartDiv, xArray, yArray, sensorRead) {
   }, 250);
 })();
 
-// Camera feed functionality
-var btnStartStream = document.getElementById("btn-start-stream");
-var imgLiveStream = document.getElementById("img-live-stream");
+// --- Unified Camera & Gallery Functionality ---
+const btnToggleStream = document.getElementById("btn-toggle-stream");
+const btnCapturePhoto = document.getElementById("btn-capture-photo");
+const btnToggleRecord = document.getElementById("btn-toggle-record");
+const imgLiveStream = document.getElementById("img-live-stream");
+const cameraOffText = document.getElementById("camera-off-text");
+const recordingIndicator = document.getElementById("recording-indicator");
+const galleryContainer = document.getElementById("gallery-container");
 
-btnStartStream.addEventListener("click", function() {
-  imgLiveStream.src = "/stream";
-  imgLiveStream.style.display = "inline-block";
+let isStreamOn = false;
+let isRecording = false;
+
+function updateButtonStates() {
+  if (isStreamOn) {
+    btnToggleStream.innerHTML = "<i class='bx bx-power-off'></i> Turn Off";
+    btnToggleStream.style.background = "#6c757d";
+    btnCapturePhoto.disabled = false;
+    btnCapturePhoto.style.opacity = 1;
+    btnToggleRecord.disabled = false;
+    btnToggleRecord.style.opacity = 1;
+    imgLiveStream.style.display = "block";
+    cameraOffText.style.display = "none";
+  } else {
+    btnToggleStream.innerHTML = "<i class='bx bx-power-off'></i> Turn On";
+    btnToggleStream.style.background = "#0A2558";
+    btnCapturePhoto.disabled = true;
+    btnCapturePhoto.style.opacity = 0.5;
+    btnToggleRecord.disabled = true;
+    btnToggleRecord.style.opacity = 0.5;
+    imgLiveStream.style.display = "none";
+    cameraOffText.style.display = "block";
+  }
+  
+  if (isRecording) {
+    btnToggleRecord.innerHTML = "<i class='bx bx-stop-circle'></i> Stop Record";
+    btnToggleRecord.style.background = "#343a40";
+    recordingIndicator.style.display = "block";
+  } else {
+    btnToggleRecord.innerHTML = "<i class='bx bx-video'></i> Start Record";
+    btnToggleRecord.style.background = "#dc3545";
+    recordingIndicator.style.display = "none";
+  }
+}
+
+btnToggleStream.addEventListener("click", () => {
+  isStreamOn = !isStreamOn;
+  if (isStreamOn) {
+    imgLiveStream.src = `/stream?t=${new Date().getTime()}`; // Bypass cache
+  } else {
+    imgLiveStream.src = "";
+    if (isRecording) toggleRecord(); // Failsafe: stop recording if stream is killed
+  }
+  updateButtonStates();
 });
 
-var btnGetPhoto = document.getElementById("btn-get-photo");
-var imgStillPhoto = document.getElementById("img-still-photo");
+btnCapturePhoto.addEventListener("click", () => {
+  // Quick visual flash feedback for the shutter
+  const originalBg = btnCapturePhoto.style.background;
+  btnCapturePhoto.style.background = "#ffffff";
+  setTimeout(() => btnCapturePhoto.style.background = originalBg, 150);
 
-btnGetPhoto.addEventListener("click", function() {
-  // Append a timestamp to the URL to bypass browser caching
-  imgStillPhoto.src = `/photo?t=${new Date().getTime()}`;
-  imgStillPhoto.style.display = "inline-block";
+  fetch('/api/camera/capture', { method: 'POST' })
+    .then(res => res.json())
+    .then(data => { if (data.url) loadGallery(); });
 });
+
+function toggleRecord() {
+  if (!isRecording) {
+    fetch('/api/camera/record/start', { method: 'POST' }).then(() => {
+      isRecording = true;
+      updateButtonStates();
+    });
+  } else {
+    fetch('/api/camera/record/stop', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        isRecording = false;
+        updateButtonStates();
+        if (data.url) loadGallery();
+      });
+  }
+}
+
+btnToggleRecord.addEventListener("click", toggleRecord);
+
+function loadGallery() {
+  fetch('/api/gallery')
+    .then(res => res.json())
+    .then(files => {
+      galleryContainer.innerHTML = "";
+      if (files.length === 0) {
+        galleryContainer.innerHTML = "<p style='color: #666; width: 100%; text-align: center; font-style: italic; margin-top: 10px;'>No photos or videos yet.</p>";
+        return;
+      }
+      
+      files.forEach(file => {
+        const itemDiv = document.createElement("div");
+        itemDiv.style = "position: relative; min-width: 140px; height: 100px; border-radius: 8px; overflow: hidden; background: #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.2); flex-shrink: 0; border: 2px solid #fff;";
+        
+        let thumbHtml = file.type === "photo" 
+          ? `<img src="${file.url}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #333; color: #fff; font-size: 30px;"><i class='bx bx-video-recording'></i></div>`;
+        
+        itemDiv.innerHTML = `
+          ${thumbHtml}
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 5px; display: flex; justify-content: space-around;">
+            <a href="${file.url}" target="_blank" style="color: #fff; text-decoration: none; font-size: 18px; transition: 0.2s;" title="View in Browser"><i class='bx bx-show'></i></a>
+            <a href="${file.url}" download="${file.name}" style="color: #fff; text-decoration: none; font-size: 18px; transition: 0.2s;" title="Download File"><i class='bx bx-download'></i></a>
+          </div>
+          ${file.type === "video" ? `<span style="position: absolute; top: 4px; left: 4px; color: #fff; font-size: 10px; background: red; padding: 2px 6px; border-radius: 4px; font-weight: bold;">VIDEO</span>` : ""}
+        `;
+        galleryContainer.appendChild(itemDiv);
+      });
+    });
+}
+
+// Initialize gallery on page load
+loadGallery();

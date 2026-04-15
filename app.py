@@ -1,10 +1,21 @@
 import io
+import os
+import time
+import threading
 import cv2
-from flask import Flask, render_template, jsonify, Response, send_file
+from flask import Flask, render_template, jsonify, Response, send_file, request
 from bme_module import BME280Module
 from picamera2 import Picamera2
 
 app = Flask(__name__)
+
+# Ensure gallery directory exists
+GALLERY_DIR = os.path.join('static', 'gallery')
+os.makedirs(GALLERY_DIR, exist_ok=True)
+
+recording = False
+video_writer = None
+video_filename = ""
 
 try:
     bme280_module = BME280Module()
@@ -47,24 +58,78 @@ def get_sensor_readings():
     except Exception as e:
         return jsonify({"status": "Error", "message": str(e)}), 500
     
-@app.route("/photo")
-def get_photo():
-    """Takes a single still shot and returns it directly to the browser."""
+@app.route("/api/camera/capture", methods=["POST"])
+def capture_photo():
+    """Takes a single still shot and saves it to the gallery."""
     if picam2 is None:
-        return "Camera is not initialized", 500
+        return jsonify({"error": "Camera is not initialized"}), 500
 
-    # We grab a frame directly from the running video configuration
     frame = picam2.capture_array()
+    timestamp = int(time.time())
+    filename = f"photo_{timestamp}.jpg"
+    filepath = os.path.join(GALLERY_DIR, filename)
     
-    # Encode the array to a JPEG in memory (avoids wearing out the SD card)
-    ret, buffer = cv2.imencode('.jpg', frame)
-    
-    if not ret:
-        return "Failed to capture image", 500
+    cv2.imwrite(filepath, frame)
+    return jsonify({"status": "success", "url": f"/static/gallery/{filename}", "type": "photo"})
 
-    # Convert the buffer to a file-like object and send it
-    image_stream = io.BytesIO(buffer)
-    return send_file(image_stream, mimetype='image/jpeg')
+def record_loop():
+    """Background thread function to write frames to a video file."""
+    global recording, video_writer
+    while recording:
+        if picam2 is not None and video_writer is not None:
+            try:
+                frame = picam2.capture_array()
+                video_writer.write(frame)
+            except Exception as e:
+                print(f"Error recording frame: {e}")
+        time.sleep(0.1)  # Target roughly 10 FPS
+
+@app.route('/api/camera/record/start', methods=['POST'])
+def start_record():
+    """Initializes the video writer and starts the recording thread."""
+    global recording, video_writer, video_filename
+    if picam2 is None: 
+        return jsonify({"error": "Camera is not initialized"}), 500
+        
+    timestamp = int(time.time())
+    filename = f"video_{timestamp}.avi"
+    filepath = os.path.join(GALLERY_DIR, filename)
+    
+    # Initialize OpenCV VideoWriter using MJPG codec (compatible for downloads)
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    video_writer = cv2.VideoWriter(filepath, fourcc, 10.0, (1280, 720))
+    video_filename = filename
+    recording = True
+    
+    threading.Thread(target=record_loop, daemon=True).start()
+    return jsonify({"status": "recording started"})
+
+@app.route('/api/camera/record/stop', methods=['POST'])
+def stop_record():
+    """Stops recording and finalizes the video file."""
+    global recording, video_writer, video_filename
+    recording = False
+    if video_writer:
+        video_writer.release()
+        video_writer = None
+    return jsonify({"status": "success", "url": f"/static/gallery/{video_filename}", "type": "video"})
+
+@app.route('/api/gallery')
+def get_gallery():
+    """Returns a list of all saved photos and videos."""
+    files = []
+    if os.path.exists(GALLERY_DIR):
+        for f in os.listdir(GALLERY_DIR):
+            if f.endswith('.jpg') or f.endswith('.avi'):
+                files.append({
+                    "url": f"/static/gallery/{f}",
+                    "type": "photo" if f.endswith('.jpg') else "video",
+                    "name": f,
+                    "time": os.path.getctime(os.path.join(GALLERY_DIR, f))
+                })
+    # Sort newest files first
+    files.sort(key=lambda x: x['time'], reverse=True)
+    return jsonify(files)
 
 def generate_frames():
     """Generator function that yields JPEG frames for the live stream."""

@@ -11,6 +11,15 @@
     />
     <link rel="stylesheet" href="static/css/style.css" />
     <script src="static/plotly-2.16.1.min.js"></script>
+    <style>
+      @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+      .gallery-scrollbar::-webkit-scrollbar { height: 8px; }
+      .gallery-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    </style>
   </head>
   <body>
     <div class="sidebar">
@@ -91,18 +100,29 @@
         </div>
         
         <div class="graph-box" style="margin-top: 20px;">
-          <div style="flex: 1; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 10px rgba(0,0,0,0.1); margin-right: 20px;">
-            <div class="title" style="font-size: 24px; font-weight: 500; margin-bottom: 15px;">Live Camera Feed</div>
-            <button id="btn-start-stream" style="margin-bottom: 15px; padding: 8px 16px; cursor: pointer; background: #0A2558; color: #fff; border: none; border-radius: 4px; font-size: 15px;">Start Stream</button>
-            <div style="text-align: center;">
-              <img id="img-live-stream" alt="Live Camera Feed" width="640" height="480" style="display: none; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" />
-            </div>
-          </div>
           <div style="flex: 1; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 10px rgba(0,0,0,0.1);">
-            <div class="title" style="font-size: 24px; font-weight: 500; margin-bottom: 15px;">Still Snapshot</div>
-            <button id="btn-get-photo" style="margin-bottom: 15px; padding: 8px 16px; cursor: pointer; background: #0A2558; color: #fff; border: none; border-radius: 4px; font-size: 15px;">Get Still Shot</button>
-            <div style="text-align: center;">
-              <img id="img-still-photo" alt="Still Snapshot" width="640" height="480" style="display: none; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" />
+            <div class="title" style="font-size: 24px; font-weight: 500; margin-bottom: 15px;">Camera Viewfinder</div>
+            
+            <!-- Unified Viewfinder -->
+            <div style="text-align: center; background: #000; border-radius: 8px; overflow: hidden; position: relative; min-height: 480px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+              <span id="camera-off-text" style="color: #fff; font-size: 18px;"><i class='bx bx-power-off'></i> Camera is Off</span>
+              <img id="img-live-stream" alt="Live Camera Feed" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;" />
+              <div id="recording-indicator" style="display: none; position: absolute; top: 20px; right: 20px; color: red; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; animation: blink 1s infinite;">
+                ⏺ RECORDING
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+              <button id="btn-toggle-stream" style="padding: 10px 20px; cursor: pointer; background: #0A2558; color: #fff; border: none; border-radius: 8px; font-size: 16px; display: flex; align-items: center; gap: 8px; transition: 0.3s;"><i class='bx bx-power-off'></i> Turn On</button>
+              <button id="btn-capture-photo" disabled style="padding: 10px 20px; cursor: pointer; background: #28a745; color: #fff; border: none; border-radius: 8px; font-size: 16px; display: flex; align-items: center; gap: 8px; opacity: 0.5; transition: 0.3s;"><i class='bx bx-camera'></i> Take Photo</button>
+              <button id="btn-toggle-record" disabled style="padding: 10px 20px; cursor: pointer; background: #dc3545; color: #fff; border: none; border-radius: 8px; font-size: 16px; display: flex; align-items: center; gap: 8px; opacity: 0.5; transition: 0.3s;"><i class='bx bx-video'></i> Start Record</button>
+            </div>
+
+            <!-- Gallery Section -->
+            <div class="title" style="font-size: 20px; font-weight: 500; margin-top: 30px; margin-bottom: 10px;">Gallery</div>
+            <div id="gallery-container" class="gallery-scrollbar" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; min-height: 120px; background: #f5f5f5; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+              <!-- Thumbnails will be injected here via JavaScript -->
             </div>
           </div>
         </div>
