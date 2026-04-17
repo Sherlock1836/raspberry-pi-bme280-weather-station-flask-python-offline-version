@@ -94,12 +94,12 @@ def start_record():
     timestamp = int(time.time())
     
     # CHANGED: Save as .mp4
-    filename = f"video_{timestamp}.mp4"
+    filename = f"video_{timestamp}.webm"
     filepath = os.path.join(GALLERY_DIR, filename)
 
     # CHANGED: Use 'avc1' (H.264) which is globally supported by browsers
     # Note: If this fails to write bytes on the Pi Zero, change 'avc1' to 'VP80' and '.mp4' to '.webm'
-    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    fourcc = cv2.VideoWriter_fourcc(*'VP80')
     video_writer = cv2.VideoWriter(filepath, fourcc, 10.0, (1280, 720))
     video_filename = filename
     recording = True
