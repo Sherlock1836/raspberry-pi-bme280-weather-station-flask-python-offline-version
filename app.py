@@ -22,7 +22,7 @@ try:
 except Exception as e:
     print(f"Error initializing BME280 module: {e}")
     bme280_module = None
-    
+
 try:
     picam2 = Picamera2()
 
@@ -57,7 +57,7 @@ def get_sensor_readings():
         )
     except Exception as e:
         return jsonify({"status": "Error", "message": str(e)}), 500
-    
+
 @app.route("/api/camera/capture", methods=["POST"])
 def capture_photo():
     """Takes a single still shot and saves it to the gallery."""
@@ -68,7 +68,7 @@ def capture_photo():
     timestamp = int(time.time())
     filename = f"photo_{timestamp}.jpg"
     filepath = os.path.join(GALLERY_DIR, filename)
-    
+
     cv2.imwrite(filepath, frame)
     return jsonify({"status": "success", "url": f"/static/gallery/{filename}", "type": "photo"})
 
@@ -90,17 +90,20 @@ def start_record():
     global recording, video_writer, video_filename
     if picam2 is None: 
         return jsonify({"error": "Camera is not initialized"}), 500
-        
+
     timestamp = int(time.time())
-    filename = f"video_{timestamp}.avi"
-    filepath = os.path.join(GALLERY_DIR, filename)
     
-    # Initialize OpenCV VideoWriter using MJPG codec (compatible for downloads)
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    # CHANGED: Save as .mp4
+    filename = f"video_{timestamp}.mp4"
+    filepath = os.path.join(GALLERY_DIR, filename)
+
+    # CHANGED: Use 'avc1' (H.264) which is globally supported by browsers
+    # Note: If this fails to write bytes on the Pi Zero, change 'avc1' to 'VP80' and '.mp4' to '.webm'
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
     video_writer = cv2.VideoWriter(filepath, fourcc, 10.0, (1280, 720))
     video_filename = filename
     recording = True
-    
+
     threading.Thread(target=record_loop, daemon=True).start()
     return jsonify({"status": "recording started"})
 
@@ -120,7 +123,8 @@ def get_gallery():
     files = []
     if os.path.exists(GALLERY_DIR):
         for f in os.listdir(GALLERY_DIR):
-            if f.endswith('.jpg') or f.endswith('.avi'):
+            # CHANGED: Included .mp4 (and left .avi in case you want to see old files)
+            if f.endswith('.jpg') or f.endswith('.avi') or f.endswith('.mp4'):
                 files.append({
                     "url": f"/static/gallery/{f}",
                     "type": "photo" if f.endswith('.jpg') else "video",
@@ -139,18 +143,16 @@ def generate_frames():
     while True:
         # Grab the current frame
         frame = picam2.capture_array()
-        
+
         # Compress it to JPEG format
-        # You can lower the quality (e.g., 80) to save bandwidth if needed:
-        # ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         ret, buffer = cv2.imencode('.jpg', frame)
-        
+
         if ret:
             frame_bytes = buffer.tobytes()
             # Yield the frame in the standard MJPEG format
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            
+
 @app.route("/stream")
 def video_stream():
     """Returns the live video feed."""
