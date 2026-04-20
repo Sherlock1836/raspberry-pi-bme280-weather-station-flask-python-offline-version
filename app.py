@@ -65,6 +65,8 @@ def capture_photo():
         return jsonify({"error": "Camera is not initialized"}), 500
 
     frame = picam2.capture_array()
+    # UNCOMMENT the below line if your photos have red and blue colors swapped (Smurf effect)
+    # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     timestamp = int(time.time())
     filename = f"photo_{timestamp}.jpg"
     filepath = os.path.join(GALLERY_DIR, filename)
@@ -79,6 +81,8 @@ def record_loop():
         if picam2 is not None and video_writer is not None:
             try:
                 frame = picam2.capture_array()
+                # UNCOMMENT the below line if your recorded videos have red and blue colors swapped
+                # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 video_writer.write(frame)
             except Exception as e:
                 print(f"Error recording frame: {e}")
@@ -123,8 +127,8 @@ def get_gallery():
     files = []
     if os.path.exists(GALLERY_DIR):
         for f in os.listdir(GALLERY_DIR):
-            # CHANGED: Included .mp4 (and left .avi in case you want to see old files)
-            if f.endswith('.jpg') or f.endswith('.avi') or f.endswith('.mp4'):
+            # CHANGED: Included .mp4 and .webm (and left .avi in case you want to see old files)
+            if f.endswith('.jpg') or f.endswith('.avi') or f.endswith('.mp4') or f.endswith('.webm'):
                 files.append({
                     "url": f"/static/gallery/{f}",
                     "type": "photo" if f.endswith('.jpg') else "video",
@@ -143,6 +147,9 @@ def generate_frames():
     while True:
         # Grab the current frame
         frame = picam2.capture_array()
+
+        # UNCOMMENT the below line if your live video stream has red and blue colors swapped
+        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         # Compress it to JPEG format
         ret, buffer = cv2.imencode('.jpg', frame)
